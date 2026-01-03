@@ -179,4 +179,60 @@ describe("Given I am connected as an employee", () => {
     expect(errorSpy).toHaveBeenCalledWith(expect.any(Error));
     errorSpy.mockRestore();
   });
+
+  test("should POST new bill and navigate to Bills page on form submit", async () => {
+    const html = NewBillUI();
+    document.body.innerHTML = html;
+    const onNavigate = jest.fn();
+    const createMock = jest
+      .fn()
+      .mockResolvedValue({ fileUrl: "url", key: "123" });
+    const updateMock = jest.fn().mockResolvedValue({});
+    const store = {
+      bills: () => ({
+        create: createMock,
+        update: updateMock,
+      }),
+    };
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "user",
+      JSON.stringify({ type: "Employee", email: "employee@test.tld" })
+    );
+    const newBill = new NewBill({
+      document,
+      onNavigate,
+      store,
+      localStorage: window.localStorage,
+    });
+
+    screen.getByTestId("expense-type").value = "Transports";
+    screen.getByTestId("expense-name").value = "Taxi";
+    screen.getByTestId("amount").value = "42";
+    screen.getByTestId("datepicker").value = "2023-01-01";
+    screen.getByTestId("vat").value = "10";
+    screen.getByTestId("pct").value = "20";
+    screen.getByTestId("commentary").value = "Test";
+
+    const fileInput = screen.getByTestId("file");
+    const validFile = new File(["dummy content"], "test.png", {
+      type: "image/png",
+    });
+    Object.defineProperty(fileInput, "files", { value: [validFile] });
+    const event = {
+      preventDefault: jest.fn(),
+      target: {
+        files: [validFile],
+        value: "C:\\fakepath\\test.png",
+      },
+    };
+    await newBill.handleChangeFile(event);
+
+    const form = screen.getByTestId("form-new-bill");
+    form.dispatchEvent(new Event("submit"));
+
+    expect(createMock).toHaveBeenCalled();
+
+    expect(onNavigate).toHaveBeenCalledWith("#employee/bills");
+  });
 });
