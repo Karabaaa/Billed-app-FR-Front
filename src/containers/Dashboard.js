@@ -38,8 +38,8 @@ export const card = (bill) => {
 
   return `
     <div class='bill-card' id='open-bill${bill.id}' data-testid='open-bill${
-    bill.id
-  }'>
+      bill.id
+    }'>
       <div class='bill-card-name-container'>
         <div class='bill-card-name'> ${firstName} ${lastName} </div>
         <span class='bill-card-grey'> ... </span>
@@ -88,7 +88,7 @@ export default class {
     $("#modaleFileAdmin1")
       .find(".modal-body")
       .html(
-        `<div style='text-align: center;'><img width=${imgWidth} src=${billUrl} alt="Bill"/></div>`
+        `<div style='text-align: center;'><img width=${imgWidth} src=${billUrl} alt="Bill"/></div>`,
       );
     if (typeof $("#modaleFileAdmin1").modal === "function")
       $("#modaleFileAdmin1").modal("show");
@@ -140,27 +140,24 @@ export default class {
   };
 
   handleShowTickets(e, bills, index) {
-    // Gestion générale des compteurs pour chaque status(liste)
     this.counters = this.counters || {};
     this.counters[index] = this.counters[index] || 0;
+    const isClosed = this.counters[index] % 2 === 0;
 
-    if (this.counters[index] % 2 === 0) {
+    if (isClosed) {
       $(`#arrow-icon${index}`).css({ transform: "rotate(0deg)" });
-      $(`#status-bills-container${index}`).html(
-        cards(filteredBills(bills, getStatus(index)))
-      );
+      const billsByStatus = filteredBills(bills, getStatus(index));
+      $(`#status-bills-container${index}`).html(cards(billsByStatus));
+      billsByStatus.forEach((bill) => {
+        $(`#open-bill${bill.id}`)
+          .off("click")
+          .on("click", (e) => this.handleEditTicket(e, bill, bills));
+      });
     } else {
       $(`#arrow-icon${index}`).css({ transform: "rotate(90deg)" });
       $(`#status-bills-container${index}`).html("");
     }
     this.counters[index]++;
-
-    // Ajoute les listeners uniquement sur les tickets affichés dans la liste courante
-    filteredBills(bills, getStatus(index)).forEach((bill) => {
-      $(`#open-bill${bill.id}`)
-        .off("click")
-        .on("click", (e) => this.handleEditTicket(e, bill, bills));
-    });
 
     return bills;
   }
