@@ -60,13 +60,13 @@ describe("Given I am connected as an employee", () => {
           type: "Employee",
         }),
       );
-
+      const modalMock = jest.fn();
       window.$ = jest.fn(() => ({
         width: () => 1000,
         find: () => ({
           html: jest.fn(),
         }),
-        modal: jest.fn(),
+        modal: modalMock,
         click: jest.fn(),
       }));
 
@@ -90,6 +90,7 @@ describe("Given I am connected as an employee", () => {
 
       const modale = screen.getByTestId("modaleFile");
       expect(modale).toBeTruthy();
+      expect(modalMock).toHaveBeenCalled();
     });
   });
 
