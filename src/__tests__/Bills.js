@@ -25,7 +25,7 @@ describe("Given I am connected as an employee", () => {
         "user",
         JSON.stringify({
           type: "Employee",
-        })
+        }),
       );
       const root = document.createElement("div");
       root.setAttribute("id", "root");
@@ -40,7 +40,7 @@ describe("Given I am connected as an employee", () => {
       document.body.innerHTML = BillsUI({ data: bills });
       const dates = screen
         .getAllByText(
-          /^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/i
+          /^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/i,
         )
         .map((a) => a.innerHTML);
       const antiChrono = (a, b) => (a < b ? 1 : -1);
@@ -58,7 +58,7 @@ describe("Given I am connected as an employee", () => {
         "user",
         JSON.stringify({
           type: "Employee",
-        })
+        }),
       );
 
       window.$ = jest.fn(() => ({
@@ -115,7 +115,7 @@ describe("Given I am connected as an employee", () => {
       test("fetches bills from mock API GET", async () => {
         localStorage.setItem(
           "user",
-          JSON.stringify({ type: "Employee", email: "a@a" })
+          JSON.stringify({ type: "Employee", email: "a@a" }),
         );
         const root = document.createElement("div");
         root.setAttribute("id", "root");
@@ -174,7 +174,7 @@ describe("Given I am connected as an employee", () => {
             JSON.stringify({
               type: "Employee",
               email: "a@a",
-            })
+            }),
           );
           const root = document.createElement("div");
           root.setAttribute("id", "root");
@@ -190,9 +190,9 @@ describe("Given I am connected as an employee", () => {
             };
           });
           window.onNavigate(ROUTES_PATH.Bills);
-          await new Promise(process.nextTick);
-          const message = await screen.getByText(/Erreur 404/);
-          expect(message).toBeTruthy();
+          await waitFor(() => {
+            expect(screen.getByText(/Erreur 404/)).toBeTruthy();
+          });
         });
 
         test("fetches messages from an API and fails with 500 message error", async () => {
@@ -205,9 +205,9 @@ describe("Given I am connected as an employee", () => {
           });
 
           window.onNavigate(ROUTES_PATH.Bills);
-          await new Promise(process.nextTick);
-          const message = await screen.getByText(/Erreur 500/);
-          expect(message).toBeTruthy();
+          await waitFor(() => {
+            expect(screen.getByText(/Erreur 500/)).toBeTruthy();
+          });
         });
       });
     });
