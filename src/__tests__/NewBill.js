@@ -18,7 +18,7 @@ describe("Given I am connected as an employee", () => {
       window.localStorage.clear();
       window.localStorage.setItem(
         "user",
-        JSON.stringify({ type: "Employee", email: "employee@test.tld" })
+        JSON.stringify({ type: "Employee", email: "employee@test.tld" }),
       );
       const newBill = new NewBill({
         document,
@@ -41,7 +41,7 @@ describe("Given I am connected as an employee", () => {
       newBill.handleChangeFile(event);
 
       expect(window.alert).toHaveBeenCalledWith(
-        "Seuls les fichiers au format .jpg, .jpeg ou .png sont autorisés."
+        "Seuls les fichiers au format .jpg, .jpeg ou .png sont autorisés.",
       );
       expect(fileInput.value).toBe("");
     });
@@ -58,7 +58,7 @@ describe("Given I am connected as an employee", () => {
       window.localStorage.clear();
       window.localStorage.setItem(
         "user",
-        JSON.stringify({ type: "Employee", email: "employee@test.tld" })
+        JSON.stringify({ type: "Employee", email: "employee@test.tld" }),
       );
       const newBill = new NewBill({
         document,
@@ -96,7 +96,7 @@ describe("Given I am connected as an employee", () => {
     window.localStorage.clear();
     window.localStorage.setItem(
       "user",
-      JSON.stringify({ type: "Employee", email: "employee@test.tld" })
+      JSON.stringify({ type: "Employee", email: "employee@test.tld" }),
     );
     const newBill = new NewBill({
       document,
@@ -132,7 +132,7 @@ describe("Given I am connected as an employee", () => {
         fileUrl: "url",
         fileName: "test.png",
         status: "pending",
-      })
+      }),
     );
     expect(onNavigate).toHaveBeenCalledWith("#employee/bills");
     expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH["Bills"]);
@@ -149,7 +149,7 @@ describe("Given I am connected as an employee", () => {
     window.localStorage.clear();
     window.localStorage.setItem(
       "user",
-      JSON.stringify({ type: "Employee", email: "employee@test.tld" })
+      JSON.stringify({ type: "Employee", email: "employee@test.tld" }),
     );
     const newBill = new NewBill({
       document,
@@ -180,59 +180,109 @@ describe("Given I am connected as an employee", () => {
     errorSpy.mockRestore();
   });
 
-  test("should POST new bill and navigate to Bills page on form submit", async () => {
-    const html = NewBillUI();
-    document.body.innerHTML = html;
-    const onNavigate = jest.fn();
-    const createMock = jest
-      .fn()
-      .mockResolvedValue({ fileUrl: "url", key: "123" });
-    const updateMock = jest.fn().mockResolvedValue({});
-    const store = {
-      bills: () => ({
-        create: createMock,
-        update: updateMock,
-      }),
-    };
-    window.localStorage.clear();
-    window.localStorage.setItem(
-      "user",
-      JSON.stringify({ type: "Employee", email: "employee@test.tld" })
-    );
-    const newBill = new NewBill({
-      document,
-      onNavigate,
-      store,
-      localStorage: window.localStorage,
+  describe("Integration POST NewBill ", () => {
+    let onNavigate;
+    let event;
+    let validFile;
+
+    beforeEach(() => {
+      const html = NewBillUI();
+      document.body.innerHTML = html;
+      onNavigate = jest.fn();
+      window.localStorage.clear();
+      window.localStorage.setItem(
+        "user",
+        JSON.stringify({ type: "Employee", email: "employee@test.tld" }),
+      );
+      screen.getByTestId("expense-type").value = "Transports";
+      screen.getByTestId("expense-name").value = "Taxi";
+      screen.getByTestId("amount").value = "42";
+      screen.getByTestId("datepicker").value = "2023-01-01";
+      screen.getByTestId("vat").value = "10";
+      screen.getByTestId("pct").value = "20";
+      screen.getByTestId("commentary").value = "Test";
+
+      const fileInput = screen.getByTestId("file");
+      validFile = new File(["dummy content"], "test.png", {
+        type: "image/png",
+      });
+
+      Object.defineProperty(fileInput, "files", { value: [validFile] });
+
+      event = {
+        preventDefault: jest.fn(),
+        target: {
+          files: [validFile],
+          value: "C:\\fakepath\\test.png",
+        },
+      };
     });
 
-    screen.getByTestId("expense-type").value = "Transports";
-    screen.getByTestId("expense-name").value = "Taxi";
-    screen.getByTestId("amount").value = "42";
-    screen.getByTestId("datepicker").value = "2023-01-01";
-    screen.getByTestId("vat").value = "10";
-    screen.getByTestId("pct").value = "20";
-    screen.getByTestId("commentary").value = "Test";
-
-    const fileInput = screen.getByTestId("file");
-    const validFile = new File(["dummy content"], "test.png", {
-      type: "image/png",
+    afterEach(() => {
+      jest.restoreAllMocks();
     });
-    Object.defineProperty(fileInput, "files", { value: [validFile] });
-    const event = {
-      preventDefault: jest.fn(),
-      target: {
-        files: [validFile],
-        value: "C:\\fakepath\\test.png",
-      },
+
+    const setUpNewBill = (
+      createMock,
+      updateMock = jest.fn().mockResolvedValue({}),
+    ) => {
+      return new NewBill({
+        document,
+        onNavigate,
+        store: {
+          bills: () => ({
+            create: createMock,
+            update: updateMock,
+          }),
+        },
+        localStorage: window.localStorage,
+      });
     };
-    await newBill.handleChangeFile(event);
 
-    const form = screen.getByTestId("form-new-bill");
-    form.dispatchEvent(new Event("submit"));
+    test("should POST successfully new bill and navigate to Bills page on form submit", async () => {
+      const createMock = jest
+        .fn()
+        .mockResolvedValue({ fileUrl: "url", key: "123" });
+      const newBill = setUpNewBill(createMock);
+      newBill.handleChangeFile(event);
+      await new Promise((r) => setTimeout(r, 10));
 
-    expect(createMock).toHaveBeenCalled();
+      const form = screen.getByTestId("form-new-bill");
+      form.dispatchEvent(new Event("submit"));
 
-    expect(onNavigate).toHaveBeenCalledWith("#employee/bills");
+      expect(createMock).toHaveBeenCalled();
+
+      expect(onNavigate).toHaveBeenCalledWith("#employee/bills");
+    });
+
+    test("POST new bills to the API and fails with 404 message error", async () => {
+      const createMock = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("Erreur 404"));
+      const newBill = setUpNewBill(createMock);
+      const errorSpy = jest.spyOn(console, "error");
+
+      newBill.handleChangeFile(event);
+      await new Promise((r) => setTimeout(r, 10));
+      expect(createMock).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Erreur 404" }),
+      );
+    });
+
+    test("POST new bills to the API and fails with 500 message error", async () => {
+      const createMock = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("Erreur 500"));
+      const newBill = setUpNewBill(createMock);
+      const errorSpy = jest.spyOn(console, "error");
+
+      newBill.handleChangeFile(event);
+      await new Promise((r) => setTimeout(r, 10));
+      expect(createMock).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Erreur 500" }),
+      );
+    });
   });
 });
